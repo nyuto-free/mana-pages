@@ -1,0 +1,662 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DeviceBadges from '../../components/DeviceBadges.astro';
+import { apps, type AppMeta } from '../../data/apps';
+
+export function getStaticPaths() {
+  return apps.map((app) => ({
+    params: { slug: app.slug },
+    props: { app },
+  }));
+}
+
+interface Props {
+  app: AppMeta;
+}
+
+const { app } = Astro.props;
+
+const statusLabel: Record<typeof app.status, string> = {
+  available: 'App Store 配信中',
+  review: 'App Store 審査中',
+  'coming-soon': '近日公開',
+};
+
+const siteOrigin = Astro.site?.toString().replace(/\/$/, '') ?? 'https://mana-app.studio';
+const pageUrl = `${siteOrigin}/apps/${app.slug}`;
+const iconUrl = `${siteOrigin}${app.iconImage}`;
+const ogImageUrl = `${siteOrigin}/og/${app.slug}.png`;
+
+const deviceOsMap: Record<string, string> = {
+  iphone: 'iOS',
+  ipad: 'iPadOS',
+  mac: 'macOS',
+};
+const operatingSystem = app.devices.map((d) => deviceOsMap[d]).join(', ');
+
+// SoftwareApplication structured data — App Store と同等の情報を Google に提供
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'MobileApplication',
+  name: app.name,
+  alternateName: app.appStoreName,
+  description: app.seoDescription,
+  applicationCategory: `${app.category}Application`,
+  operatingSystem,
+  url: pageUrl,
+  image: iconUrl,
+  inLanguage: 'ja',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'JPY',
+  },
+  ...(app.appStoreUrl ? { installUrl: app.appStoreUrl, downloadUrl: app.appStoreUrl } : {}),
+  author: {
+    '@type': 'Person',
+    name: '中西 悠人',
+    url: siteOrigin,
+  },
+  publisher: {
+    '@type': 'Person',
+    name: '中西 悠人',
+  },
+};
+
+// FAQPage structured data — FAQが検索結果でアコーディオン表示されやすくなる
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: app.faqs.map((faq) => ({
+    '@type': 'Question',
+    name: faq.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: faq.answer,
+    },
+  })),
+};
+
+// Breadcrumb
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Mana', item: siteOrigin },
+    { '@type': 'ListItem', position: 2, name: app.name, item: pageUrl },
+  ],
+};
+---
+
+<BaseLayout title={app.name} description={app.seoDescription} ogImage={`/og/${app.slug}.png`}>
+  <script type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+  <article style={`--app-accent: ${app.accentColor};`}>
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-text">
+          <p class="eyebrow">{statusLabel[app.status]}</p>
+          <h1>{app.name}</h1>
+          <p class="tagline">{app.tagline}</p>
+          <p class="lead">{app.description}</p>
+          <div class="badge-row"><DeviceBadges devices={app.devices} size="md" /></div>
+          <div class="cta-row">
+            {app.appStoreUrl ? (
+              <a class="btn btn-primary" href={app.appStoreUrl} target="_blank" rel="noopener">
+                App Store で見る
+              </a>
+            ) : (
+              <span class="btn btn-primary disabled" aria-disabled="true">App Store リンク準備中</span>
+            )}
+            <a class="btn btn-ghost" href={app.privacyUrl} target="_blank" rel="noopener">
+              プライバシーポリシー
+            </a>
+          </div>
+        </div>
+        <div class="hero-icon">
+          <span class="icon-glow" aria-hidden="true"></span>
+          <div class="icon-tile">
+            <img src={app.iconImage} alt={`${app.name} アプリアイコン`} width="220" height="220" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section features-section">
+      <div class="container">
+        <p class="eyebrow">Features</p>
+        <h2>主な機能</h2>
+        <div class="feature-grid">
+          {app.features.map((feature) => (
+            <div class="feature-card">
+              <span class="feature-glow" aria-hidden="true"></span>
+              <h3>{feature.title}</h3>
+              <p class="muted">{feature.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    {app.screenshots.length > 0 && (() => {
+      // Compute radius so the chord between adjacent items is constant
+      // regardless of how many screenshots an app has. chord = item width + desired gap.
+      const itemWidth = 200;
+      const targetGap = 22;
+      const chord = itemWidth + targetGap;
+      const radius = Math.round(chord / (2 * Math.sin(Math.PI / app.screenshots.length)));
+      return (
+        <section class="section screenshots-section">
+          <div class="container">
+            <p class="eyebrow">Screenshots</p>
+            <h2>画面イメージ</h2>
+          </div>
+          <div
+            class="carousel-3d"
+            aria-label="アプリのスクリーンショット"
+            style={`--total: ${app.screenshots.length}; --radius: ${radius}px;`}
+          >
+            <div class="ring">
+              {app.screenshots.map((shot, idx) => (
+                <div class="ring-item" style={`--i: ${idx};`}>
+                  <div class="shot-frame">
+                    <img src={shot.src} alt={shot.alt} loading="lazy" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    })()}
+
+    <section class="section">
+      <div class="container-narrow">
+        <p class="eyebrow">FAQ</p>
+        <h2>よくある質問</h2>
+        <div class="faq-list">
+          {app.faqs.map((faq) => (
+            <details>
+              <summary>{faq.question}</summary>
+              <p>{faq.answer}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="back-section">
+      <div class="container-narrow">
+        <a href="/" class="back-link">← Mana シリーズ一覧へ戻る</a>
+      </div>
+    </section>
+  </article>
+</BaseLayout>
+
+<script>
+  type Carousel = {
+    el: HTMLElement;
+    ring: HTMLElement;
+    rotation: number;
+    velocity: number;
+    isDragging: boolean;
+    pendingDrag: boolean;
+    dragStartX: number;
+    dragStartY: number;
+    dragStartRotation: number;
+    lastPointerX: number;
+    lastPointerTime: number;
+    interactingUntil: number;
+    pointerId: number | null;
+  };
+
+  const AUTO_DPS = 360 / 50; // degrees per second (1 full turn / 50s)
+  const RESUME_DELAY_MS = 1500;
+  const DRAG_SENSITIVITY = 0.35; // deg per pixel
+  const WHEEL_SENSITIVITY = 0.4;
+  const FRICTION = 0.92;
+  const INTENT_THRESHOLD_PX = 6; // movement needed before deciding scroll vs drag
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function setupCarousel(el: HTMLElement) {
+    const ring = el.querySelector<HTMLElement>('.ring');
+    if (!ring) return;
+
+    const state: Carousel = {
+      el,
+      ring,
+      rotation: 0,
+      velocity: 0,
+      isDragging: false,
+      pendingDrag: false,
+      dragStartX: 0,
+      dragStartY: 0,
+      dragStartRotation: 0,
+      lastPointerX: 0,
+      lastPointerTime: 0,
+      interactingUntil: 0,
+      pointerId: null,
+    };
+
+    let lastFrameTime = performance.now();
+
+    function frame(now: number) {
+      const dt = (now - lastFrameTime) / 1000;
+      lastFrameTime = now;
+
+      const userIsActive = state.isDragging || now < state.interactingUntil;
+
+      if (!state.isDragging) {
+        if (Math.abs(state.velocity) > 0.5) {
+          state.rotation += state.velocity * dt;
+          state.velocity *= Math.pow(FRICTION, dt * 60);
+        } else if (!userIsActive && !prefersReducedMotion) {
+          state.rotation -= AUTO_DPS * dt;
+        }
+      }
+
+      state.ring.style.transform = `rotateY(${state.rotation}deg)`;
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    el.addEventListener('pointerdown', (e: PointerEvent) => {
+      if (e.button !== undefined && e.button !== 0) return;
+      // Don't claim the pointer yet — first move decides whether the user
+      // wants to drag the carousel or scroll the page vertically.
+      state.pendingDrag = true;
+      state.pointerId = e.pointerId;
+      state.dragStartX = e.clientX;
+      state.dragStartY = e.clientY;
+      state.dragStartRotation = state.rotation;
+      state.lastPointerX = e.clientX;
+      state.lastPointerTime = performance.now();
+      state.velocity = 0;
+    });
+
+    el.addEventListener('pointermove', (e: PointerEvent) => {
+      if (state.pointerId !== e.pointerId) return;
+
+      if (state.pendingDrag) {
+        const dx = e.clientX - state.dragStartX;
+        const dy = e.clientY - state.dragStartY;
+        const adx = Math.abs(dx);
+        const ady = Math.abs(dy);
+
+        if (adx < INTENT_THRESHOLD_PX && ady < INTENT_THRESHOLD_PX) return;
+
+        if (ady > adx) {
+          // Vertical intent — release the pointer so the page scrolls naturally
+          state.pendingDrag = false;
+          state.pointerId = null;
+          return;
+        }
+
+        // Horizontal intent — start dragging
+        state.pendingDrag = false;
+        state.isDragging = true;
+        el.classList.add('dragging');
+        try { el.setPointerCapture(e.pointerId); } catch {}
+      }
+
+      if (!state.isDragging) return;
+
+      const dx = e.clientX - state.dragStartX;
+      state.rotation = state.dragStartRotation - dx * DRAG_SENSITIVITY;
+
+      const now = performance.now();
+      const dt = (now - state.lastPointerTime) / 1000;
+      if (dt > 0) {
+        state.velocity = -((e.clientX - state.lastPointerX) * DRAG_SENSITIVITY) / dt;
+      }
+      state.lastPointerX = e.clientX;
+      state.lastPointerTime = now;
+    });
+
+    function endPointer(e: PointerEvent) {
+      if (state.pointerId !== e.pointerId) return;
+      const wasDragging = state.isDragging;
+      state.isDragging = false;
+      state.pendingDrag = false;
+      state.pointerId = null;
+      if (wasDragging) {
+        state.interactingUntil = performance.now() + RESUME_DELAY_MS;
+        el.classList.remove('dragging');
+        try { el.releasePointerCapture(e.pointerId); } catch {}
+      }
+    }
+    el.addEventListener('pointerup', endPointer);
+    el.addEventListener('pointercancel', endPointer);
+
+    el.addEventListener('wheel', (e: WheelEvent) => {
+      // Only intercept clearly horizontal wheel input (trackpad swipe / shift+wheel).
+      // Vertical wheel must pass through so the page scrolls.
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      state.rotation -= e.deltaX * WHEEL_SENSITIVITY * 0.1;
+      state.interactingUntil = performance.now() + RESUME_DELAY_MS;
+    }, { passive: false });
+
+    el.addEventListener('mouseenter', () => {
+      state.interactingUntil = performance.now() + RESUME_DELAY_MS;
+    });
+
+    el.addEventListener('mouseleave', () => {
+      state.interactingUntil = performance.now();
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('.carousel-3d').forEach(setupCarousel);
+</script>
+
+<style>
+  .hero {
+    position: relative;
+    padding: clamp(64px, 10vw, 120px) 0 clamp(56px, 8vw, 96px);
+  }
+
+  .hero-inner {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 56px;
+    align-items: center;
+  }
+
+  .hero-text h1 {
+    font-size: clamp(2.4rem, 6vw, 3.8rem);
+    margin-bottom: 14px;
+    font-weight: 500;
+  }
+
+  .tagline {
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    color: var(--color-text);
+    margin: 0 0 22px;
+    opacity: 0.95;
+  }
+
+  .lead {
+    font-size: 1.05rem;
+    color: var(--color-text-muted);
+    margin-bottom: 22px;
+    max-width: 52ch;
+  }
+
+  .badge-row {
+    margin-bottom: 28px;
+  }
+
+  .cta-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .btn.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    box-shadow: none;
+  }
+
+  .hero-icon {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .icon-glow {
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--app-accent) 55%, transparent), transparent 70%);
+    filter: blur(60px);
+    opacity: 0.6;
+  }
+
+  .icon-tile {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    border-radius: 52px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 30px 80px rgba(0, 0, 0, 0.55);
+  }
+
+  .icon-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .icon-tile::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.10), transparent 32%);
+    pointer-events: none;
+  }
+
+  .features-section {
+    position: relative;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+    margin-top: 32px;
+  }
+
+  .feature-card {
+    position: relative;
+    padding: 28px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(180deg, rgba(10, 11, 14, 0.85) 0%, rgba(6, 7, 8, 0.85) 100%);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    transition: border-color 0.3s ease, transform 0.3s ease;
+  }
+
+  .feature-card:hover {
+    border-color: rgba(124, 141, 255, 0.35);
+    transform: translateY(-2px);
+  }
+
+  .feature-glow {
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(124, 141, 255, 0.20), transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+    opacity: 0.7;
+  }
+
+  .feature-card h3 {
+    margin-bottom: 8px;
+    color: var(--color-text);
+    position: relative;
+  }
+
+  .feature-card p {
+    margin: 0;
+    font-size: 0.95rem;
+    position: relative;
+  }
+
+  .screenshots-section {
+    position: relative;
+  }
+
+  /* 3D ring carousel — items placed around a vertical axis, ring rotates */
+  .carousel-3d {
+    --item-w: 200px;
+    --item-h: 433px; /* 9:19.5 aspect at 200px width */
+    --radius: 285px;
+    --scale-front: 1.13;
+
+    margin-top: 40px;
+    padding: 40px 0 70px;
+    height: calc(var(--item-h) * var(--scale-front) + 110px);
+    perspective: 2400px;
+    perspective-origin: 50% 50%;
+    overflow: hidden;
+    touch-action: pan-y;
+    cursor: grab;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .carousel-3d.dragging {
+    cursor: grabbing;
+  }
+
+  .ring {
+    position: relative;
+    width: var(--item-w);
+    height: var(--item-h);
+    margin: 0 auto;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+
+  .ring-item {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: rotateY(calc(var(--i) * (360deg / var(--total)))) translateZ(var(--radius));
+  }
+
+  .shot-frame {
+    position: relative;
+    padding: 8px;
+    border-radius: 32px;
+    background: linear-gradient(180deg, rgba(124, 141, 255, 0.22), rgba(124, 141, 255, 0.04));
+    box-shadow: 0 0 0 1px var(--color-border-soft),
+      0 30px 80px rgba(0, 0, 0, 0.55);
+  }
+
+  .shot-frame img {
+    width: 100%;
+    aspect-ratio: 9 / 19.5;
+    object-fit: cover;
+    border-radius: 24px;
+    background: var(--color-surface);
+    display: block;
+  }
+
+  @media (max-width: 720px) {
+    .carousel-3d {
+      --item-w: 150px;
+      --item-h: 325px;
+      --radius: 215px;
+    }
+  }
+
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  details {
+    background: linear-gradient(180deg, rgba(10, 11, 14, 0.7) 0%, rgba(6, 7, 8, 0.7) 100%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 0;
+    overflow: hidden;
+    transition: border-color 0.25s ease;
+  }
+
+  details[open] {
+    border-color: rgba(124, 141, 255, 0.3);
+  }
+
+  details summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 20px 24px;
+    font-weight: 600;
+    color: var(--color-text);
+    position: relative;
+  }
+
+  details summary::-webkit-details-marker {
+    display: none;
+  }
+
+  details summary::after {
+    content: '+';
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-indigo);
+    font-size: 1.4rem;
+    font-weight: 400;
+    transition: transform 0.25s ease;
+  }
+
+  details[open] summary::after {
+    transform: translateY(-50%) rotate(45deg);
+  }
+
+  details p {
+    margin: 0;
+    padding: 0 24px 22px;
+    color: var(--color-text-muted);
+  }
+
+  .back-section {
+    padding: 32px 0 64px;
+  }
+
+  .back-link {
+    font-size: 0.92rem;
+    color: var(--color-text-dim);
+  }
+
+  .back-link:hover {
+    color: var(--color-text-muted);
+  }
+
+  @media (max-width: 720px) {
+    .hero-inner {
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+    .hero-icon {
+      order: -1;
+    }
+    .icon-tile {
+      width: 160px;
+      height: 160px;
+      border-radius: 38px;
+    }
+    .icon-glow {
+      width: 240px;
+      height: 240px;
+    }
+  }
+</style>

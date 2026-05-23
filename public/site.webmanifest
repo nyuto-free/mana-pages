@@ -1,0 +1,19 @@
+{
+  "name": "Mana",
+  "short_name": "Mana",
+  "description": "Manaシリーズ — Manage your essentials, lightly.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030305",
+  "theme_color": "#030305",
+  "lang": "ja",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

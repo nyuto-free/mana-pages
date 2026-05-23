@@ -1,0 +1,118 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="cols">
+      <div>
+        <p class="brand-line">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>Mana</span>
+        </p>
+        <p class="muted small">Manage your essentials, lightly.</p>
+      </div>
+      <div>
+        <h4>アプリ</h4>
+        <ul>
+          <li><a href="/apps/studymana">StudyMana</a></li>
+          <li><a href="/apps/newsmana">NewsMana</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>サポート</h4>
+        <ul>
+          <li><a href="mailto:support@mana-app.studio">お問い合わせ</a></li>
+          <li><a href="https://studymana.mana-app.studio/privacy-policy.html">StudyMana プライバシー</a></li>
+          <li><a href="https://newsmana.mana-app.studio/">NewsMana プライバシー</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="copy muted small">© {year} 中西 悠人 (Yuto Nakanishi)</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: 96px;
+    padding: 72px 0 40px;
+    position: relative;
+  }
+
+  .footer-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .cols {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1.4fr;
+    gap: 40px;
+  }
+
+  .brand-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 8px;
+  }
+
+  .brand-mark {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.18), transparent 60%),
+      linear-gradient(135deg, var(--color-indigo) 0%, var(--color-gold) 100%);
+    box-shadow: 0 0 0 1px rgba(124, 141, 255, 0.25);
+  }
+
+  h4 {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-text-dim);
+    margin: 0 0 14px;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  ul a {
+    font-size: 0.92rem;
+    color: var(--color-text-muted);
+  }
+
+  ul a:hover {
+    color: var(--color-text);
+  }
+
+  .small {
+    font-size: 0.85rem;
+  }
+
+  .copy {
+    margin: 0;
+    padding-top: 28px;
+    color: var(--color-text-dim);
+  }
+
+  @media (max-width: 720px) {
+    .cols {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+  }
+</style>

@@ -1,0 +1,146 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import AppCard from '../components/AppCard.astro';
+import { apps } from '../data/apps';
+
+const siteOrigin = Astro.site?.toString().replace(/\/$/, '') ?? 'https://mana-app.studio';
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Mana',
+  alternateName: 'Manaシリーズ',
+  url: siteOrigin,
+  description: 'Manaシリーズの公式サイト。StudyMana / NewsMana ほか、軽やかに毎日を整える iOS / macOS アプリのハブ。',
+  inLanguage: 'ja',
+};
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Mana',
+  url: siteOrigin,
+  logo: `${siteOrigin}/favicon.svg`,
+  founder: {
+    '@type': 'Person',
+    name: '中西 悠人',
+  },
+  email: 'support@mana-app.studio',
+  sameAs: apps.map((app) => app.appStoreUrl).filter(Boolean),
+};
+
+const itemListJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  itemListElement: apps.map((app, idx) => ({
+    '@type': 'ListItem',
+    position: idx + 1,
+    url: `${siteOrigin}/apps/${app.slug}`,
+    name: app.name,
+  })),
+};
+---
+
+<BaseLayout
+  title="Mana"
+  description="Manaシリーズ — 個人開発のiOS/macOSアプリ。資格学習向けポモドーロタイマー「StudyMana」、ジャンル別ニュースリーダー「NewsMana」を無料公開中。"
+>
+  <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+  <script type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
+  <script type="application/ld+json" set:html={JSON.stringify(itemListJsonLd)} />
+  <section class="hero">
+    <div class="container">
+      <p class="eyebrow">Mana Series</p>
+      <h1>
+        毎日に必要なものを、<br />
+        <span class="accent">軽やかに整える</span>
+      </h1>
+      <p class="lead">
+        Manage your essentials, lightly.<br />
+        集中・学び・情報。日々の essential を、静かで美しいツールで支える Mana シリーズ。
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#apps">アプリを見る</a>
+        <a class="btn btn-ghost" href="#about">シリーズについて</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section apps-section" id="apps">
+    <div class="container">
+      <p class="eyebrow">Apps</p>
+      <h2>リリース中のアプリ</h2>
+      <p class="muted">現在 {apps.length} アプリを公開中です。</p>
+      <div class="grid">
+        {apps.map((app) => <AppCard app={app} />)}
+      </div>
+    </div>
+  </section>
+
+  <section class="section about" id="about">
+    <div class="container-narrow">
+      <p class="eyebrow">About</p>
+      <h2>Mana シリーズについて</h2>
+      <p>
+        Manaは「<strong>Manage your essentials, lightly.</strong>」を掲げる、個人開発のアプリシリーズです。
+        生活・学習・情報といった毎日の essential を、軽やかで美しいツールで支えることを目指しています。
+      </p>
+      <p>
+        どのアプリも <strong>シンプルな操作・最小限のデータ収集・Apple プラットフォームへの最適化</strong> を共通の設計思想にしています。
+        必要のないものを足さず、本当に価値のある体験だけを丁寧に届けます。
+      </p>
+      <p class="muted small">
+        開発: 中西 悠人 (Yuto Nakanishi) ／ お問い合わせ:
+        <a href="mailto:support@mana-app.studio">support@mana-app.studio</a>
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    position: relative;
+    padding: clamp(88px, 14vw, 160px) 0 clamp(72px, 10vw, 120px);
+  }
+
+  .hero h1 {
+    max-width: 18ch;
+    font-weight: 500;
+  }
+
+  .accent {
+    background: linear-gradient(120deg, #c9d4ff 0%, var(--color-indigo) 40%, var(--color-gold) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .lead {
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
+    max-width: 38ch;
+    margin-bottom: 32px;
+  }
+
+  .cta-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 22px;
+    margin-top: 32px;
+  }
+
+  .about p {
+    font-size: 1.05rem;
+    color: var(--color-text-muted);
+  }
+
+  .about strong {
+    color: var(--color-text);
+  }
+</style>
